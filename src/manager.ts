@@ -46,6 +46,15 @@ export class VoiceStateManager {
           this.latency = data.state.ping
         }
       })
+      this.LavalinkStructVoice?.on('voiceStateUpdate', (data) => {
+        if (data.user_id == undefined && data.session_id == undefined) return
+        if (data.user_id === this.LavalinkStructVoice?.user) {
+          this.setSessionId(data.session_id)
+        }
+      })
+      this.LavalinkStructVoice?.on('voiceServerUpdate', (data) => {
+        this.state = data
+      })
     }
   }
   get getState() {
@@ -63,7 +72,7 @@ export class VoiceStateManager {
     }
   }
 
-  private joinChannel(mode: string) {
+  joinChannel(mode: string) {
     if (this.getSessionId == undefined && this.getSessionId == null)
       throw new Error('Session is invalid')
     if (this.getState == undefined && this.getState == null)
@@ -90,6 +99,8 @@ export class VoiceStateManager {
 }
 
 export class LavalinkStructVoice extends EventEmitter {
+  public shards: number = 1
+  public user: string = ''
   public voiceStates: Array<VoiceStateManager> = new Array()
   public client: any
   public library: string | null = null
@@ -101,6 +112,34 @@ export class LavalinkStructVoice extends EventEmitter {
     if (client !== undefined) {
       this.client = client
     }
+  }
+
+
+  private setLibrary(name: string) {
+    this.library = name
+  }
+
+  addReadyOnce() {
+    if (typeof this.client.once !== 'function') throw new Error('Unable to parse the client.');
+
+    this.client.once('ready', () => {
+      if (typeof this.client.user.id === 'string' && this.client.user.id != '') {
+        this.user = this.client.user.id
+      }
+
+      if (this.client.shards.size) {
+        this.shards = this.client.shards.size || 1
+        this.setLibrary('Eris')
+        this.emit('debugMessage', (`Library detected! You are using ${this.library}`))
+      } else if (this.client.options.shardCount !== undefined) {
+        this.shards = this.client.options.shardCount || 1
+        this.setLibrary('Discord.js')
+        this.emit('debugMessage', (`Library detected! You are using ${this.library}`))
+        this.emit('debugMessageError', (`${this.library} not supported for now.`))
+      }
+
+      this.addListen()
+    })
   }
 
   getVoiceState(id: string): VoiceStateManager | null {
@@ -131,50 +170,6 @@ export class LavalinkStructVoice extends EventEmitter {
     }
   }
 
-
-
-}
-
-
-
-export class LavalinkManager extends LavalinkStructVoice {
-  public shards: number = 1
-  public user: string = ''
-
-  constructor(client: any) {
-    super(client)
-    this.addReadyOnce()
-  }
-
-
-  private setLibrary(name: string) {
-    this.library = name
-  }
-
-  addReadyOnce() {
-    if (typeof this.client.once !== 'function') throw new Error('Unable to parse the client.');
-    
-    this.client.once('ready', () => {
-      if (typeof this.client.user.id === 'string' && this.client.user.id != '') {
-        this.user = this.client.user.id
-      }
-
-      if (this.client.shards.size) {
-        this.shards = this.client.shards.size || 1
-        this.setLibrary('Eris')
-        this.emit('debugMessage', (`Library detected! You are using ${this.library}`))
-      } else if (this.client.options.shardCount !== undefined) {
-        this.shards = this.client.options.shardCount || 1
-        this.setLibrary('Discord.js')
-        this.emit('debugMessage', (`Library detected! You are using ${this.library}`))
-        this.emit('debugMessageError', (`${this.library} not supported for now.`))
-      }
-
-      this.addListen()
-    })
-  }
-
-
   addListen() {
     if (this.library === 'Eris') {
       this.client.on('rawWs', (data: any) => {
@@ -190,5 +185,16 @@ export class LavalinkManager extends LavalinkStructVoice {
         }
       })
     }
+  }
+
+}
+
+
+
+export class LavalinkManager extends LavalinkStructVoice {
+
+  constructor(client: any) {
+    super(client)
+    this.addReadyOnce()
   }
 }
