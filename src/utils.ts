@@ -1,0 +1,1 @@
+export const clientLibrary = `sirius/1.0.0-dev`
