@@ -13,3 +13,5 @@ export * from './rest'
 
 // Others
 export * from './config'
+export * from './player'
+export * from './client'

@@ -62,6 +62,10 @@ export interface ConfigLavalink {
    * Lavalink Rest Request Settings
    */
   rest: LavalinkRestOptions;
+  /**
+   * Wait for the client to issue a Ready to initialize the Lavalink nodes.
+   */
+  waitReady: boolean;
 }
 export const defineConfigLavalink = (options?: ConfigLavalink) => ({
   // Settings Default
@@ -79,6 +83,7 @@ export const defineConfigLavalink = (options?: ConfigLavalink) => ({
     version: options?.version === undefined ? VersionAPI.v3 : options?.version,
     ...options?.rest
   },
+  waitReady: true,
   ...options
 } as ConfigLavalink)
 
