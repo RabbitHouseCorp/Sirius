@@ -248,6 +248,19 @@ export class Manager<A = any, B = any> extends EventEmitter implements IManager 
     return true
   }
 
+  destroyPlayer(playerID: string): Promise<boolean> {
+    const player = this.getPlayer(playerID)
+    return new Promise((resolve, reject) => {
+      if (player === null) return resolve(false)
+      player.destroyPlayer()
+        .then((_) => {
+          this.removePlayer(playerID)
+          resolve(true)
+        })
+        .catch((error) => reject(error))
+    })
+  }
+
   moveNodePlayer(_playerID: string | string[]): boolean {
     throw new Error('Method not implemented.');
   }
