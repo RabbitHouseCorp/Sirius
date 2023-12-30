@@ -1,0 +1,6 @@
+export * from './EndpointV3'
+export * from './LavalinkTypesV3'
+export * from './PlayerV3'
+export * from './SessionV3'
+export * from './TrackResultV3'
+export * from './TrackV3'
