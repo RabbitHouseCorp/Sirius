@@ -622,7 +622,7 @@ export class Player<T = any, R = any> extends EventEmitter implements IPlayer {
 
   stopPlayer(): Promise<boolean> {
     return new Promise((resolve, reject) => {
-      if (this.playerIsUnavailable) {
+      if (!this.playerIsUnavailable) {
         this.#node?.client?.stopPlayer(this.getPlayerID)
           .then((_) => {
             if (this.listenerCount('stop') != 0)
