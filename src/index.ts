@@ -1,17 +1,5 @@
-
-// Types
-export * from './typesRest'
-export * from './typesWebsocket'
+export * from './api'
+export * from './interface'
+export * from './internal'
+export * from './lib'
 export * from './types'
-
-// Client Websocket
-export * from './websocket'
-
-// Client Rest
-export * from './rest'
-
-
-// Others
-export * from './config'
-export * from './player'
-export * from './client'
