@@ -18,10 +18,11 @@ export class ErisLibrary implements LibraryStruct<Guild, AnyChannel> {
   }
 
 
-  countUsersConnected(guildID: string): number | null {
+  countUsersConnected(guildID: string, channelID: string): number | null {
     const guild = this.getGuild(guildID)
     if (!guild) return null
-    return guild.voiceStates.size - 1 < 0 ? 0 : guild.voiceStates.size - 1
+    const users = guild.voiceStates.filter((user) => user.channelID === channelID).length
+    return users - 1 < 0 ? 0 : users - 1
   }
 
 
@@ -52,9 +53,7 @@ export class ErisLibrary implements LibraryStruct<Guild, AnyChannel> {
               joined: typeof d?.channel_id === 'string' ? true : false
             })
           } else {
-            if (this.countUsersConnected(d?.guild_id)) {
-
-            }
+           
           }
         }
       })

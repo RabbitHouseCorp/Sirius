@@ -114,7 +114,7 @@ export interface VoiceManagerOptions {
 
 
 interface VoiceChannelManager {
-  countUsersConnected(guildID: string): number | null
+  countUsersConnected(guildID: string, channelID: string): number | null
   connect(guildID: string, channelID: string, options: {
     selfMute?: boolean
     selfDeaf?: boolean
@@ -136,7 +136,7 @@ interface VoiceChannelManager {
 
 
 interface VoiceChannel {
-  countUsersConnected(): number | null
+  countUsersConnected(channelID: string): number | null
   sessionReady(sessionID: string, endpoint: string, token: string, guildID: string): void
   connect(channelID: string, options: {
     selfMute?: boolean
@@ -245,7 +245,7 @@ export class Voice implements IVoice {
   }
 
   get countUsersConnected(): number {
-    return this.#channel?.countUsersConnected() ?? 0
+    return this.#channel?.countUsersConnected(this.channelID ?? '') ?? 0
   }
 
   get hostname(): string | null {
@@ -534,8 +534,8 @@ export class VoiceManager {
       sessionReady: (sessionID, endpoint, token, guild) => {
         this.channel.state('sessionReady', { sessionID, endpoint, token, guild })
       },
-      countUsersConnected: () => {
-        return this.#manager?.countUsersConnected(guildID) ?? null
+      countUsersConnected: (channelID) => {
+        return this.#manager?.countUsersConnected(guildID, channelID) ?? null
       },
       connect: (channelID, options = {
         selfDeaf: false,

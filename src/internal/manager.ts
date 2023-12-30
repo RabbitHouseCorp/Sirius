@@ -76,8 +76,8 @@ export class Manager<A = any, B = any> extends EventEmitter implements IManager 
         switch: (guildID, channelID, options) => {
           return this.#library?.switch(guildID, channelID, options) ?? false
         },
-        countUsersConnected: (guildID) => {
-          return this.#library?.countUsersConnected(guildID) ?? null
+        countUsersConnected: (guildID, channelID: string) => {
+          return this.#library?.countUsersConnected(guildID, channelID) ?? null
         }
       })
 

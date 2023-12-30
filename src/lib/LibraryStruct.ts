@@ -18,7 +18,7 @@ export interface LibraryChannel {
 export interface LibraryStruct<G, C> {
   getGuild(guildID: string): G | null
   getChannel(guildID: string): C | null
-  countUsersConnected(guildID: string): number | null
+  countUsersConnected(guildID: string, channelID: string): number | null
   connectVoice(guildID: string, channelID: string, options: {
     selfMute?: boolean
     selfDeaf?: boolean
