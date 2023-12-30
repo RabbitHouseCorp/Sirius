@@ -1,4 +1,4 @@
-import { AnyChannel, Client, Guild } from 'eris'
+import { AnyChannel, Client, Guild, VoiceChannel } from 'eris'
 import { format } from 'util'
 import { LibraryChannel, LibraryStruct } from '../LibraryStruct'
 
@@ -21,8 +21,9 @@ export class ErisLibrary implements LibraryStruct<Guild, AnyChannel> {
   countUsersConnected(guildID: string, channelID: string): number | null {
     const guild = this.getGuild(guildID)
     if (!guild) return null
-    const users = guild.voiceStates.filter((user) => user.channelID === channelID).length
-    return users - 1 < 0 ? 0 : users - 1
+    const channel: VoiceChannel | any | undefined = guild.channels.find((channel) => channel.id === channelID)
+    if (channel === undefined) return 0
+    return channel?.voiceMembers?.filter((user: any) => user.id != this.#client?.user.id).length ?? 0
   }
 
 
@@ -53,7 +54,7 @@ export class ErisLibrary implements LibraryStruct<Guild, AnyChannel> {
               joined: typeof d?.channel_id === 'string' ? true : false
             })
           } else {
-           
+
           }
         }
       })
