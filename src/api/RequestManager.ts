@@ -1,11 +1,11 @@
 import EventEmitter from 'events'
 import { Track } from '../types/Track'
+import { format } from '../utils'
 import { Method, RequestLibrary, RequestLibraryOptions as RequestOptionsLibrary, Response } from './RequestLibrary'
 import { RouteManager } from './RouteManager'
 import { PlayerSession, PlayerUpdateData } from './impl/PlayerSession'
 import { TrackResultBase } from './impl/TrackRest'
 import { getVersion } from './lavalink/VersionHeader'
-import { format } from '../utils'
 
 
 export interface RequestOptions {
@@ -72,15 +72,15 @@ export class RequestManager extends EventEmitter {
     return new Promise((resolve, reject) => {
       let route = this.#routes?.getRouteByName('getPlayer')
       if (route) {
+
         const path = route?.preparePath({
           path: {
             ...(typeof sessionID === 'string' ? { sessionId: sessionID } : { sessionId: '' }),
-            ...(typeof sessionID === 'string' ? { guildId: guildID } : { guildId: '' })
+            players: '',
+            ...(typeof guildID === 'string' ? { player: guildID } : { player: '' })
           },
-          query: {
-
-          }
-        }, true)
+          query: {}
+        }, true, true)
         this.requestBase(path, { requiredAuth: true, method: Method.Delete })
           .then((request) => {
             request.flush(request.data)
