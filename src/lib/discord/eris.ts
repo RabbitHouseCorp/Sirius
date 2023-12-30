@@ -31,8 +31,6 @@ export class ErisLibrary implements LibraryStruct<Guild, AnyChannel> {
       .on('rawWS', ({ t, d }: any, shardID) => {
         if (!t && !d) return
 
-        console.log(t)
-
         if (t == 'VOICE_SERVER_UPDATE') {
           if (this.#libraryChannel && typeof this.#libraryChannel?.voiceServer === 'function') {
             if (d?.guild_id != null && typeof this.#libraryChannel?.shardID === 'function')
