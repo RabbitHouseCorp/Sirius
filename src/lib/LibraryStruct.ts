@@ -4,6 +4,8 @@ export interface LibraryChannel {
     suppress: boolean
     deaf: boolean
     mute: boolean
+    channelID: string | null
+    guildID: string | null
     selfMute: boolean
     selfDeaf: boolean
     sessionID: string | null
