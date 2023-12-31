@@ -173,14 +173,19 @@ export class Manager<A = any, B = any> extends EventEmitter implements IManager 
     })
   }
 
-  #voiceState(sessionID: string | null, channelID: string | null, options?: {
+  #voiceState(sessionID: string | null, _channelID: string | null, options?: {
     suppress: boolean
+    channelID: string | null
     deaf: boolean
     mute: boolean
     selfMute: boolean
     selfDeaf: boolean
+    guildID: string | null
   }) {
-    this.#voiceManager?.updateState('voiceState', { channelID }, {
+    this.#voiceManager?.updateState('voiceState', {
+      channelID: _channelID,
+      ...(options?.guildID ? { guildID: options.guildID } : {})
+    }, {
       sessionID,
       ...options
     })

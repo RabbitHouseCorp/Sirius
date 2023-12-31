@@ -32,7 +32,6 @@ export class ErisLibrary implements LibraryStruct<Guild, AnyChannel> {
     this.#client
       .on('rawWS', ({ t, d }: any, shardID) => {
         if (!t && !d) return
-
         if (t == 'VOICE_SERVER_UPDATE') {
           if (this.#libraryChannel && typeof this.#libraryChannel?.voiceServer === 'function') {
             if (d?.guild_id != null && typeof this.#libraryChannel?.shardID === 'function')
@@ -48,9 +47,11 @@ export class ErisLibrary implements LibraryStruct<Guild, AnyChannel> {
               suppress: typeof d?.suppress === 'boolean' ? d.suppress : false,
               deaf: typeof d?.deaf === 'boolean' ? d.deaf : false,
               mute: typeof d?.mute === 'boolean' ? d.mute : false,
+              channelID: typeof d?.channel_id === 'string' ? d.channel_id : null,
               selfMute: typeof d?.selfMute === 'boolean' ? d.selfMute : false,
               selfDeaf: typeof d?.selfDeaf === 'boolean' ? d.selfDeaf : false,
               sessionID: typeof d?.session_id === 'string' ? d.session_id : null,
+              guildID: typeof d?.guild_id === 'string' ? d.guild_id : null,
               joined: typeof d?.channel_id === 'string' ? true : false
             })
           } else {

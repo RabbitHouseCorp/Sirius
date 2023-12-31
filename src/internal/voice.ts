@@ -249,7 +249,8 @@ export class Voice implements IVoice {
   }
 
   get hostname(): string | null {
-    return this.#endpoint?.replace(/(https:\/\/|http:\/\/)|(discord|discordapp|discordmedia)\.[A-Za-z0-9]+|(:[0-9]+|\/.+)/, '') ?? null
+    if (this.#endpoint === null) return null
+    return this.#endpoint.replace(/(https:\/\/|http:\/\/)|(\.)?(discord|discordapp|discordmedia)\.[A-Za-z0-9]+|(:[0-9]+|\/.+)/g, '') ?? null
   }
 
   #updateState(event: string, data: any) {
@@ -312,7 +313,9 @@ export class Voice implements IVoice {
       if (typeof data?.sessionID === 'string') {
         this.#sessionID = data.sessionID
       }
-
+      if (typeof data?.channelID === 'string') {
+        this.#channelID = data.channelID
+      }
       if (typeof data?.joined === 'boolean') {
         this.#status = 'waitingNodeResponse'
         this.#joined = data.joined
