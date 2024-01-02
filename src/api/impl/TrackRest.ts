@@ -123,23 +123,31 @@ export class TrackResultBase<A = any, B = any, C = any> implements ITrackResultB
 
   get tracks(): Track<B, C>[] {
     return [
-      ...((this.loadType === 'playlist' || this.loadType === 'search') && Array.isArray(this.#data?.data)
+      ...(Array.isArray((this.#data as any)?.track) === false && typeof (this.#data as any)?.track === 'object' ? [new Track((this.#data as any)?.track ?? {})] : []),
+      ...(Array.isArray((this.#data as any)?.tracks) === false && typeof (this.#data as any)?.tracks === 'object' ? [new Track((this.#data as any)?.tracks ?? {})] : []),
+      ...(Array.isArray((this.#data as any)?.data?.track) === false && typeof (this.#data as any)?.data?.track === 'object' ? [new Track((this.#data as any)?.data?.track ?? {})] : []),
+      ...(Array.isArray((this.#data as any)?.data) === false && typeof (this.#data as any)?.data === 'object' ? [new Track((this.#data as any)?.data ?? {})] : []),
+      ...(Array.isArray(this.#data?.data)
         ?
         (this.#data?.data ?
           this.#data?.data
             ?.filter((data) => data && typeof data === 'object')
             ?.map((data) => new Track(data)) : [])
         : []),
-      ...((this.loadType === 'playlist' || this.loadType === 'search') && Array.isArray((this.#data as any)?.data?.tracks)
+      ...(Array.isArray((this.#data as any)?.data?.tracks)
         ? (this.#data as any)?.data?.tracks
           ?.filter((data: any) => data && typeof data === 'object')
           ?.map((data: any) => new Track(data))
         : []),
-      ...((this.loadType === 'playlist' || this.loadType === 'search') && Array.isArray(this.#data?.playlistInfo?.tracks) ?
+      ...(Array.isArray(this.#data?.playlistInfo?.tracks) ?
         (this.#data?.playlistInfo?.tracks ? this.#data?.playlistInfo?.tracks
           ?.filter((data) => data && typeof data === 'object')
           ?.map((data: any) => new Track(data)) : []) : []),
-      ...((this.loadType === 'playlist' || this.loadType === 'search') && Array.isArray(this.#data?.tracks) ?
+      ...(Array.isArray(this.#data?.playlistInfo) ?
+        (this.#data?.playlistInfo ? this.#data?.playlistInfo
+          ?.filter((data) => data && typeof data === 'object')
+          ?.map((data: any) => new Track(data)) : []) : []),
+      ...(Array.isArray(this.#data?.tracks) ?
         (this.#data?.tracks ? this.#data?.tracks
           ?.filter((data) => data && typeof data === 'object')
           ?.map((data: any) => new Track(data)) : []) : []),
