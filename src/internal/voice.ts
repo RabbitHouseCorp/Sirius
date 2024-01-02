@@ -293,14 +293,18 @@ export class Voice implements IVoice {
     }
 
     if (event === 'voiceState') {
+      let updated = false
       if (typeof data?.token === 'string') {
+        if (this.#token != data?.token)
+          updated = true
         this.#token = data.token
+
       }
-
-
       if (typeof data?.endpoint === 'string') {
+        if (this.#endpoint != data?.endpoint)
+          updated = true
         this.#endpoint = data.endpoint
-      } else if (data?.endpoint == null && !data?.sessionID) {
+      } else if (typeof data?.endpoint != 'string') {
         this.#resetChannel()
         if (this.#timeout) {
           clearTimeout(this.#timeout)
@@ -311,6 +315,8 @@ export class Voice implements IVoice {
         }, 2 * 1000)
       }
       if (typeof data?.sessionID === 'string') {
+        if (this.#sessionID != data?.sessionID)
+          updated = true
         this.#sessionID = data.sessionID
       }
       if (typeof data?.channelID === 'string') {
@@ -320,7 +326,9 @@ export class Voice implements IVoice {
         this.#status = 'waitingNodeResponse'
         this.#joined = data.joined
       }
-      this.#checkSession()
+
+      if (updated)
+        this.#checkSession()
     }
 
     if (event === 'voiceClose') {
@@ -376,6 +384,7 @@ export class Voice implements IVoice {
     if (this.#sessionID === null) return
     this.#shardConnectedRecently = false
     this.#status = 'waitingNodeResponse'
+  
     this.#channel?.sessionReady(this.#sessionID!!, this.#endpoint!!, this.#token!!, this.#guildID)
   }
 

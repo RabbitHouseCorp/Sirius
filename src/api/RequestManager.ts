@@ -104,7 +104,6 @@ export class RequestManager extends EventEmitter {
               // If the node is customized, the library must deliver these three fields
               ...(update.track.trackEncoded ? {
                 encodedTrack: update.track.trackEncoded,
-                identifier: update.track.info.identifier,
                 track: update.track.trackEncoded,
                 play: update.track.trackEncoded
               } : {}),

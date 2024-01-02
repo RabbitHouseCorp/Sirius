@@ -45,6 +45,7 @@ export class EndpointV3 extends RouteManager implements EndpointInterface {
       contentType: 'application/json',
       path: {
         sessionId: 'string',
+        players: 'pathEnd',
         player: 'string'
       },
       query: {

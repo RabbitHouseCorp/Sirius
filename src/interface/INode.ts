@@ -204,7 +204,8 @@ export type NodeMessageClient = |
 {
   op: NodeOPClient.Play
   guildId: string
-  track: string | null
+  track?: string | null
+  trackEncoded?: string | null
   startTime?: number
   endTime?: number
   noReplace?: boolean
