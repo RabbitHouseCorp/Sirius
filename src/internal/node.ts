@@ -39,7 +39,7 @@ export type NodeClientOptions = {
   host?: string
   port?: number | null
   password?: string
-  get sessionID (): string | null
+  get sessionID(): string | null
 }
 
 export class NodeClient implements INodeClient {
@@ -59,7 +59,7 @@ export class NodeClient implements INodeClient {
       routes: this.#selectRoute(options as any)
     })
   }
-  loadTrack<A, B, C> (identifier: string): Promise<TrackResultBase<A, B, C>> {
+  loadTrack<A, B, C>(identifier: string): Promise<TrackResultBase<A, B, C>> {
     return new Promise((resolve, reject) => {
       this.requestManager.loadTrack<A, B, C>(identifier)
         .then((data) => resolve(data))
@@ -67,7 +67,7 @@ export class NodeClient implements INodeClient {
     })
   }
 
-  #selectRoute (options: { secure: boolean, host: string, port: number | null, password: string }): EndpointV2 | EndpointV3 | EndpointV4 {
+  #selectRoute(options: { secure: boolean, host: string, port: number | null, password: string }): EndpointV2 | EndpointV3 | EndpointV4 {
     if (this.#version === 2) {
       return new EndpointV2({
         secure: options?.secure ?? false,
@@ -99,7 +99,7 @@ export class NodeClient implements INodeClient {
     })
   }
 
-  async asyncPlayTrack (playerID: string, track: Track, options?: {
+  async   asyncPlayTrack(playerID: string, track: Track, options?: {
     startTime?: number
     endTime?: number
     noReplace?: boolean
@@ -112,7 +112,14 @@ export class NodeClient implements INodeClient {
           ...(typeof options?.endTime === 'number' ? { startTime: options.endTime } : {})
         }, typeof options?.noReplace === 'boolean' ? options?.noReplace : false)
           .then(() => resolve(true))
-          .catch((error) => reject(error))
+          .catch((error: Error) => {
+            if (this.#version === 3 && (error.cause as any).status === 404) {
+              this.playTrack(playerID, track, options)
+              resolve(true)
+            } else {
+              reject(error)
+            }
+          })
       } else {
         this.playTrack(playerID, track, options)
         resolve(true)
@@ -120,7 +127,7 @@ export class NodeClient implements INodeClient {
     })
   }
 
-  async asyncSeek (playerID: string, seek: number): Promise<number> {
+  async asyncSeek(playerID: string, seek: number): Promise<number> {
     return new Promise((resolve, reject) => {
       if (this.requestManager.checkEndpoint('getPlayer')) {
         this.requestManager.playerUpdate(this.#sessionID, playerID, {
@@ -135,14 +142,25 @@ export class NodeClient implements INodeClient {
     })
   }
 
-  changeVolumePlayer (playerID: string, volume: number): Promise<null> {
+  changeVolumePlayer(playerID: string, volume: number): Promise<null> {
     return new Promise((resolve, reject) => {
       if (this.requestManager.checkEndpoint('getPlayer')) {
         this.requestManager.playerUpdate(this.#sessionID, playerID, {
           volume: typeof volume === 'number' ? volume : 100
         })
           .then((_) => resolve(null))
-          .catch((error) => reject(error))
+          .catch((error: Error) => {
+            if (this.#version === 3 && (error.cause as any).status === 404) {
+              this.#send({
+                op: NodeOPClient.Volume,
+                guildId: playerID,
+                volume: typeof volume === 'number' && !Number.isNaN(volume) ? volume : 100
+              })
+              resolve(null)
+            } else {
+              reject(error)
+            }
+          })
         return
       }
       this.#send({
@@ -153,7 +171,7 @@ export class NodeClient implements INodeClient {
       resolve(null)
     })
   }
-  setEqualizerPlayer<T = any[]> (playerID: string, equalizer: T): Promise<null> {
+  setEqualizerPlayer<T = any[]>(playerID: string, equalizer: T): Promise<null> {
     return new Promise((resolve, reject) => {
       if (this.requestManager.checkEndpoint('getPlayer')) {
         this.requestManager.playerUpdate(this.#sessionID, playerID, {
@@ -162,7 +180,25 @@ export class NodeClient implements INodeClient {
           }
         })
           .then((_) => resolve(null))
-          .catch((error) => reject(error))
+          .catch((error: Error) => {
+            if (this.#version === 3 && (error.cause as any).status === 404) {
+              this.#send({
+                op: NodeOPClient.Equalizer,
+                guildId: playerID,
+                equalizer: Array.isArray(equalizer) ? equalizer : Array.from(
+                  {
+                    length: 15
+                  },
+                  (_, index) => ({
+                    band: index, gain: 0.0
+                  })
+                )
+              }) as unknown as T[]
+              resolve(null)
+            } else {
+              reject(error)
+            }
+          })
         return
       }
       this.#send({
@@ -181,13 +217,24 @@ export class NodeClient implements INodeClient {
     })
   }
 
-  setFiltersPlayer (playerID: string, filters: any): Promise<null> {
+  setFiltersPlayer(playerID: string, filters: any): Promise<null> {
     return new Promise((resolve, reject) => {
       if (this.requestManager.checkEndpoint('getPlayer')) {
         this.requestManager.playerUpdate(this.#sessionID, playerID, {
           filters
         }).then((_) => resolve(null))
-          .catch((error) => reject(error))
+          .catch((error: Error) => {
+            if (this.#version === 3 && (error.cause as any).status === 404) {
+              this.#send({
+                op: NodeOPClient.Filters,
+                guildId: playerID,
+                ...(filters)
+              })
+              resolve(null)
+            } else {
+              reject(error)
+            }
+          })
         return
       }
       this.#send({
@@ -198,7 +245,7 @@ export class NodeClient implements INodeClient {
       resolve(null)
     })
   }
-  playTrack (playerID: string, track: Track, options?: {
+  playTrack(playerID: string, track: Track, options?: {
     startTime?: number
     endTime?: number
     noReplace?: boolean
@@ -211,7 +258,20 @@ export class NodeClient implements INodeClient {
           ...(typeof options?.endTime === 'number' ? { startTime: options.endTime } : {})
         }, typeof options?.noReplace === 'boolean' ? options?.noReplace : false)
           .then((_) => resolve(null))
-          .catch((error) => reject(error))
+          .catch((error: Error) => {
+            if (this.#version === 3 && (error.cause as any).status === 404) {
+     
+              this.#send({
+                op: NodeOPClient.Play,
+                guildId: playerID,
+                track: track.trackEncoded,
+                ...(typeof options === 'object' ? options : {})
+              })
+              resolve(null)
+            } else {
+              reject(error)
+            }
+          })
         return
       }
       this.#send({
@@ -223,7 +283,7 @@ export class NodeClient implements INodeClient {
       resolve(null)
     })
   }
-  stopPlayer (playerID: string): Promise<null> {
+  stopPlayer(playerID: string): Promise<null> {
     return new Promise((resolve, reject) => {
       if (this.requestManager.checkEndpoint('getPlayer')) {
         this.requestManager.playerUpdate(this.#sessionID, playerID, {
@@ -240,7 +300,7 @@ export class NodeClient implements INodeClient {
       resolve(null)
     })
   }
-  pausePlayer (playerID: string, pause: boolean): Promise<null> {
+  pausePlayer(playerID: string, pause: boolean): Promise<null> {
     return new Promise((resolve, reject) => {
       if (this.requestManager.checkEndpoint('getPlayer')) {
         this.requestManager.playerUpdate(this.#sessionID, playerID, {
@@ -257,7 +317,7 @@ export class NodeClient implements INodeClient {
       resolve(null)
     })
   }
-  destroyPlayer (playerID: string): Promise<null> {
+  destroyPlayer(playerID: string): Promise<null> {
     return new Promise((resolve, reject) => {
       if (this.requestManager.checkEndpoint('getPlayer')) {
         this.requestManager.destroyPlayer(this.#sessionID, playerID)
@@ -272,13 +332,24 @@ export class NodeClient implements INodeClient {
       resolve(null)
     })
   }
-  seekPlayer (playerID: string, seek: number): Promise<null> {
+  seekPlayer(playerID: string, seek: number): Promise<null> {
     return new Promise((resolve, reject) => {
       if (this.requestManager.checkEndpoint('getPlayer')) {
         this.requestManager.playerUpdate(this.#sessionID, playerID, {
           position: typeof seek === 'number' ? seek : 0
         }).then((_) => resolve(null))
-          .catch((error) => reject(error))
+          .catch((error: Error) => {
+            if (this.#version === 3 && (error.cause as any).status === 404) {
+              this.#send({
+                op: NodeOPClient.Seek,
+                guildId: playerID,
+                seek: typeof seek === 'number' ? seek : 0
+              })
+              resolve(null)
+            } else {
+              reject(error)
+            }
+          })
         return
       }
       this.#send({
@@ -290,7 +361,7 @@ export class NodeClient implements INodeClient {
     })
   }
 
-  connectPlayer (playerID: string, voiceState: INodeVoiceState): Promise<null> {
+  connectPlayer(playerID: string, voiceState: INodeVoiceState): Promise<null> {
     return new Promise((resolve, reject) => {
       if (this.requestManager.checkEndpoint('getPlayer')) {
         this.requestManager.playerUpdate(this.#sessionID, playerID, {
@@ -300,7 +371,20 @@ export class NodeClient implements INodeClient {
             token: typeof voiceState.token === 'string' ? voiceState.token : ''
           }
         }).then((_) => resolve(null))
-          .catch((error) => reject(error))
+          .catch((error: Error) => {
+            if (this.#version === 3 && (error.cause as any).status === 404) {
+              this.#send({
+                op: NodeOPClient.VoiceUpdate,
+                guildId: playerID,
+                endpoint: typeof voiceState.endpoint === 'string' ? voiceState.endpoint : '',
+                sessionId: typeof voiceState.sessionId === 'string' ? voiceState.sessionId : '',
+                token: typeof voiceState.token === 'string' ? voiceState.token : ''
+              })
+              resolve(null)
+            } else {
+              reject(error)
+            }
+          })
         return
       }
       this.#send({
@@ -314,7 +398,7 @@ export class NodeClient implements INodeClient {
     })
   }
 
-  updateStatePlayer (playerID: string, data: any) {
+  updateStatePlayer(playerID: string, data: any) {
     if (this.requestManager.checkEndpoint('getPlayer')) {
       this.requestManager.playerUpdate(this.#sessionID, playerID, data)
       return
@@ -337,7 +421,7 @@ export class NodeClient implements INodeClient {
     }
   }
 
-  destroyThis () {
+  destroyThis() {
     this.requestManager.destroy()
   }
 }
@@ -438,28 +522,28 @@ export class Node extends EventEmitter implements INode {
     Object.seal(this)
   }
 
-  get stats (): INodeStats | null {
+  get stats(): INodeStats | null {
     return this.#stats
   }
 
-  get latency (): number {
+  get latency(): number {
     return this.#startTimestamp != null && this.#endTimestamp != null
       ? this.#startTimestamp - this.#endTimestamp : 0
   }
 
-  get client (): NodeClient | null {
+  get client(): NodeClient | null {
     return this.#client
   }
 
-  get nodeDestroyed (): boolean {
+  get nodeDestroyed(): boolean {
     return this.#state.destroyed
   }
 
-  get connected (): boolean {
+  get connected(): boolean {
     return this.#connected
   }
 
-  get #versionPath (): string {
+  get #versionPath(): string {
     if (this.#version === ':v2') {
       return ''
     } else if (this.#version === ':v3') {
@@ -472,36 +556,36 @@ export class Node extends EventEmitter implements INode {
     return ''
   }
 
-  get #getUrl (): string {
+  get #getUrl(): string {
     return `${(this.#connState?.useSSL ?? false) === false ? 'ws://' : 'wss://'}${this.#connState.addressNode}${this.#connState.port ? `:${this.#connState.port}` : ''}/${this.#versionPath}`
   }
 
-  get sessionID (): string | null {
+  get sessionID(): string | null {
     return this.#sessionID
   }
 
-  get isOpen (): boolean {
+  get isOpen(): boolean {
     if (this.#conn != null) {
       return this.#conn.readyState === 1 && this.connected
     }
     return false
   }
 
-  get #ws (): WebSocket | null {
+  get #ws(): WebSocket | null {
     return this.#conn
   }
 
-  connect (): void {
+  connect(): void {
     this.#connect()
   }
 
-  sendNode (data: NodeMessageClient): boolean {
+  sendNode(data: NodeMessageClient): boolean {
     this.emit('trace', (format("node({}) -> {}", this.#nodeID, data)))
     return this.#send(data)
   }
 
 
-  #setVersion (version: string | number) {
+  #setVersion(version: string | number) {
     this.#client = null
     if (version === 'auto') {
       this.#client = new NodeClient((data) => this.sendNode(data), 2, {
@@ -558,13 +642,13 @@ export class Node extends EventEmitter implements INode {
 
   }
 
-  #emitErr (cause: string, message: string, ...args: any[]) {
+  #emitErr(cause: string, message: string, ...args: any[]) {
     if (typeof message != 'string') message = ''
     if (typeof args !== 'object' || !Array.isArray(args)) args = []
     this.emit('error', (format(message, ...args), cause))
   }
 
-  #create (): void {
+  #create(): void {
     this.#conn = new WebSocket(this.#getUrl, {
       headers: {
         Authorization: this.#connState?.password ?? '',
@@ -630,7 +714,7 @@ export class Node extends EventEmitter implements INode {
 
   }
 
-  #error (error: Error) {
+  #error(error: Error) {
     if (error) {
       if (ReadyState.includes(this.#conn?.readyState ?? -1)) {
         this.emit('debug', (format('The {} node will try to connect.', this.#nodeID)))
@@ -641,7 +725,7 @@ export class Node extends EventEmitter implements INode {
     }
   }
 
-  #send (d: string | any | null): boolean {
+  #send(d: string | any | null): boolean {
     let buffer = null
     if (this.isOpen) {
       if (d && typeof d === 'string') {
@@ -652,7 +736,7 @@ export class Node extends EventEmitter implements INode {
       if (buffer) {
         this.#conn?.send(buffer, {
           compress: true,
-          binary: true
+          binary: false
         }, (err) => { err != undefined ? this.#emitErr('Websocket.send', err.message) : null })
       }
     }
@@ -660,20 +744,20 @@ export class Node extends EventEmitter implements INode {
     return buffer != null
   }
 
-  #open (_ws: WebSocket | null) {
+  #open(_ws: WebSocket | null) {
     if (this.#conn) {
       this.#connected = true
       this.emit('connected')
     }
   }
 
-  #connect (): void {
+  #connect(): void {
     if (this.#ws == null) {
       this.#create()
     }
   }
 
-  #close (code: number = 1001, reason?: Buffer | string | null) {
+  #close(code: number = 1001, reason?: Buffer | string | null) {
     this.#conn?.removeAllListeners()
     if (this.#timeout != null) {
       clearTimeout(this.#timeout)
@@ -708,7 +792,7 @@ export class Node extends EventEmitter implements INode {
       this.#create()
   }
 
-  #reconnect (connect?: boolean): void {
+  #reconnect(connect?: boolean): void {
     if (connect && typeof connect === 'boolean') {
       if (this.#reconnectInfo.reconnect++ < this.#reconnectInfo.maxReconnect) {
         if (this.#reconnectInfo.time > 15 * 1000) {
@@ -736,20 +820,20 @@ export class Node extends EventEmitter implements INode {
       this.#create()
     }
   }
-  disconnect (code: number = 1000, reason?: string | null): void {
+  disconnect(code: number = 1000, reason?: string | null): void {
     if (this.#conn != null) {
       if (typeof reason != 'string') reason = ''
       this.#conn.close(code, Buffer.from(reason ?? ''))
     }
   }
-  #ping (): void {
+  #ping(): void {
     this.sendNode({
       op: NodeOPClient.Ping,
       timestamp: this.#startTimestamp = Math.floor(Date.now() / 1000)
     })
   }
 
-  #pong (timestamp: string | number | null): void {
+  #pong(timestamp: string | number | null): void {
     this.#endTimestamp = Math.floor(Date.now() / 1000)
     if (typeof timestamp === 'string' && !Number.isNaN(parseInt(timestamp))) {
       let time: number | null = parseInt(timestamp)
@@ -763,7 +847,7 @@ export class Node extends EventEmitter implements INode {
     }
   }
 
-  destroy (): void {
+  destroy(): void {
     if (this.isOpen) {
       this.#close(1001)
     }
@@ -774,7 +858,7 @@ export class Node extends EventEmitter implements INode {
     this.#connected = false
   }
 
-  #wsMessage (rawData: RawData | null = null) {
+  #wsMessage(rawData: RawData | null = null) {
     let data: MessageNode
     if (rawData instanceof Buffer) {
       data = JSON.parse(rawData.toString('utf-8'))
@@ -791,7 +875,7 @@ export class Node extends EventEmitter implements INode {
     rawData = null
   }
 
-  #onMessage (message: MessageNode | null = null) {
+  #onMessage(message: MessageNode | null = null) {
     this.emit('trace', (format("node({}) <- {}", this.#nodeID, message)))
     if (message) {
       if (message.op == 'ready') {
@@ -851,7 +935,7 @@ export class Node extends EventEmitter implements INode {
     }
   }
 
-  async asyncConnect (): Promise<boolean> {
+  async asyncConnect(): Promise<boolean> {
     let tryResolve = 0
     return new Promise((resolve, _) => {
       this.connect()
